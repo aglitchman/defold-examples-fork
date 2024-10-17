@@ -29,6 +29,7 @@ embedded_instances {
   id: "root"
   children: "crate"
   children: "crate_selected"
+  children: "crate_selected1"
   data: ""
 }
 embedded_instances {
@@ -85,6 +86,36 @@ embedded_instances {
   ""
   position {
     x: -0.5
+  }
+  rotation {
+    y: 0.6087614
+    w: 0.7933533
+  }
+}
+embedded_instances {
+  id: "crate_selected1"
+  data: "embedded_components {\n"
+  "  id: \"model\"\n"
+  "  type: \"model\"\n"
+  "  data: \"mesh: \\\"/examples/material/screenspace/crate.glb\\\"\\n"
+  "name: \\\"{{NAME}}\\\"\\n"
+  "materials {\\n"
+  "  name: \\\"colormap\\\"\\n"
+  "  material: \\\"/examples/material/screenspace/screenspace.material\\\"\\n"
+  "  textures {\\n"
+  "    sampler: \\\"texture0\\\"\\n"
+  "    texture: \\\"/assets/models/kenney_prototype-kit/Textures/colormap.png\\\"\\n"
+  "  }\\n"
+  "  textures {\\n"
+  "    sampler: \\\"texture_pattern\\\"\\n"
+  "    texture: \\\"/assets/models/pattern_circle.png\\\"\\n"
+  "  }\\n"
+  "}\\n"
+  "\"\n"
+  "}\n"
+  ""
+  position {
+    z: -0.5
   }
   rotation {
     y: 0.6087614

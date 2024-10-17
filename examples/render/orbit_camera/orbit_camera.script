@@ -1,0 +1,216 @@
+
+go.property("camera_id", hash("")) -- Activate camera if not empty
+go.property("distance_max", 0) -- Setting this at 0 will give an infinite distance limit
+go.property("distance_min", 0) -- Minimum distance between camera and pivot point
+go.property("pitch_angle_max", 90) -- Maximum pitch angle in degrees
+go.property("pitch_angle_min", -90) -- Minimum pitch angle in degrees
+go.property("inertia_factor", 0) -- Higher value means camera continues moving after user stops dragging. 0 is fully responsive.
+go.property("focus_object_id", hash("")) -- Entity for camera to focus on. If blank, camera uses whole scene
+go.property("frame_on_start", true) -- Frames the entity or scene at start of application
+go.property("distance", 10) -- Distance between pivot point and camera
+go.property("pitch", 0) -- Pitch of camera around pivot point in degrees
+go.property("yaw", 0) -- Yaw of camera around pivot point in degrees
+go.property("pivot_point", vmath.vector3(0, 0, 0)) -- World position of pivot point that camera orbits around
+
+local FORWARD = vmath.vector3(0, 0, -1)
+local V3_ZERO = vmath.vector3()
+
+-- Helper functions
+
+local function set_from_euler_angles(ex, ey, ez)
+    local half_to_rad = 0.5 * math.pi / 180
+    ex = ex * half_to_rad
+    ey = ey * half_to_rad
+    ez = ez * half_to_rad
+
+    local sx = math.sin(ex)
+    local cx = math.cos(ex)
+    local sy = math.sin(ey)
+    local cy = math.cos(ey)
+    local sz = math.sin(ez)
+    local cz = math.cos(ez)
+
+    local x = sx * cy * cz - cx * sy * sz
+    local y = cx * sy * cz + sx * cy * sz
+    local z = cx * cy * sz - sx * sy * cz
+    local w = cx * cy * cz + sx * sy * sz
+
+    return vmath.quat(x, y, z, w)
+end
+
+local function quat_look_at(position, target, up)
+    print(position, target, up)
+    if position.x == target.x and position.y == target.y and position.z == target.z then
+        return vmath.quat()
+    end
+    local matrix = vmath.matrix4_look_at(position, target, up)
+    local rotation = vmath.quat_matrix4(matrix)
+    return rotation
+end
+
+local function update_position(self)
+    go.set(self.camera_id, "position", V3_ZERO)
+    go.set(self.camera_id, "rotation", set_from_euler_angles(self.pitch, self.yaw, 0))
+
+    local position = vmath.rotate(go.get_rotation(), FORWARD) * -self.distance
+    position = position + self.pivot_point
+    go.set(self.camera_id, "position", position)
+end
+
+local function remove_inertia(self)
+    self.yaw = self.target_yaw
+    self.pitch = self.target_pitch
+    self.distance = self.target_distance
+end
+
+
+local function build_aabb(self, object_id)
+    -- This is a simplified version. In a real scenario, you'd need to traverse
+    -- the entire entity hierarchy and calculate the AABB properly.
+    local pos = go.get_position(object_id)
+    local scale = go.get_scale(object_id)
+    local max_scale = math.max(scale.x, math.max(scale.y, scale.z))
+
+    self.models_aabb.center = vmath.vector3(pos)
+    self.models_aabb.extents = vmath.vector3(max_scale, max_scale, max_scale)
+end
+
+local function focus(self, object_id)
+    build_aabb(self, object_id)
+    
+    local half_extents = self.models_aabb.extents * 0.5
+    local max_extent = math.max(half_extents.x, math.max(half_extents.y, half_extents.z))
+    local fov = math.rad(camera.get_fov(msg.url(nil, self.camera_id, "camera")))
+    local distance = (max_extent / math.tan(0.5 * fov)) * 2
+
+    self.distance = distance
+    remove_inertia(self)
+    self.pivot_point = vmath.vector3(self.models_aabb.center)
+end
+
+local function reset_and_look_at_point(self, reset_point, look_at_point)
+    self.pivot_point = vmath.vector3(look_at_point)
+    go.set(self.camera_id, "position", reset_point)
+    
+    local look_rotation = quat_look_at(reset_point, look_at_point, vmath.vector3(0, 1, 0))
+    go.set(self.camera_id, "rotation", look_rotation)
+    
+    local distance = vmath.length(look_at_point - reset_point)
+    self.distance = distance
+    
+    local camera_quat = go.get_rotation()
+    self.yaw = calc_yaw(self, camera_quat)
+    self.pitch = calc_pitch(self, camera_quat, self.yaw)
+    
+    remove_inertia(self)
+    update_position(self)
+end
+
+local function reset_and_look_at_entity(self, reset_point, object_id)
+    build_aabb(self, object_id)
+    reset_and_look_at_point(self, reset_point, self.models_aabb.center)
+end
+
+local function reset(self, yaw, pitch, distance)
+    self.pitch = pitch
+    self.yaw = yaw
+    self.distance = distance
+    remove_inertia(self)
+end
+
+local function calc_yaw(self, quat)
+    local transformed_forward = vmath.rotate(quat, FORWARD)
+    return math.atan2(-transformed_forward.x, -transformed_forward.z) * 180 / math.pi
+end
+
+local function clamp_distance(self, distance)
+    if self.distance_max > 0 then
+        return math.max(self.distance_min, math.min(distance, self.distance_max))
+    else
+        return math.max(distance, self.distance_min)
+    end
+end
+
+local function clamp_pitch_angle(self, pitch)
+    return math.max(-self.pitch_angle_max, math.min(pitch, -self.pitch_angle_min))
+end
+
+local function calc_pitch(self, quat, yaw)
+    local yaw_offset = vmath.quat_rotation_y(-math.rad(yaw))
+    local quat_without_yaw = yaw_offset * quat
+    local transformed_forward = vmath.rotate(quat_without_yaw, FORWARD)
+    return math.atan2(transformed_forward.y, -transformed_forward.z) * 180 / math.pi
+end
+
+-- Script
+
+function init(self)
+    if not html5 then
+        sys.set_error_handler(function(source, message, traceback)
+            print("ERROR ^^^^^^^^^^^^^^^^^")
+            sys.exit(1)
+        end)
+    end
+
+    if self.camera_id ~= hash("") then
+        msg.post("/camera", "acquire_camera_focus")
+        msg.post("@render:", "use_camera_projection")
+    end
+
+    self.last_frame_pivot_point = vmath.vector3()
+
+    self.target_distance = 0
+    self.target_pitch = 0
+    self.target_yaw = 0
+
+    self.models_aabb = { center = vmath.vector3(), extents = vmath.vector3() }
+
+    -- Initialize camera
+    build_aabb(self, self.focus_object_id)
+    local camera_pos = go.get_position(self.camera_id)
+    go.set(self.camera_id, "rotation", quat_look_at(camera_pos, self.models_aabb.center, vmath.vector3(0, 1, 0)))
+    print(go.get(self.camera_id, "euler"))
+
+    self.pivot_point = vmath.vector3(self.models_aabb.center)
+    self.last_frame_pivot_point = vmath.vector3(self.pivot_point)
+
+    local camera_quat = go.get_rotation(self.camera_id)
+    self.yaw = calc_yaw(self, camera_quat)
+    self.pitch = clamp_pitch_angle(self, calc_pitch(self, camera_quat, self.yaw))
+    print(self.yaw, self.pitch, calc_pitch(self, camera_quat, self.yaw))
+    go.set(self.camera_id, "rotation", set_from_euler_angles(self.pitch, self.yaw, 0))
+
+    -- if self.frame_on_start then
+    --     focus(self, self.focus_object_id)
+    -- else
+    local distance_between = camera_pos - self.pivot_point
+    self.distance = clamp_distance(self, vmath.length(distance_between))
+    -- end
+
+    self.target_distance = self.distance
+    self.target_pitch = self.pitch
+    self.target_yaw = self.yaw
+
+    update_position(self)
+end
+
+function update(self, dt)
+--     local t = self.inertia_factor == 0 and 1 or math.min(dt / self.inertia_factor, 1)
+--     self.distance = vmath.lerp(t, self.distance, self.target_distance)
+--     self.yaw = vmath.lerp(t, self.yaw, self.target_yaw)
+--     self.pitch = vmath.lerp(t, self.pitch, self.target_pitch)
+-- 
+--     self.last_frame_pivot_point = vmath.vector3(self.pivot_point)
+-- 
+--     print(self.distance)
+-- 
+--     update_position(self)
+end
+
+function on_message(self, message_id, message, sender)
+    -- Handle messages if needed
+end
+
+function final(self)
+    -- Cleanup if necessary
+end

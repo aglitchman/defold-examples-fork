@@ -1,0 +1,143 @@
+name: "look_rotation"
+scale_along_z: 1
+embedded_instances {
+  id: "camera"
+  data: "embedded_components {\n"
+  "  id: \"camera\"\n"
+  "  type: \"camera\"\n"
+  "  data: \"aspect_ratio: 1.0\\n"
+  "fov: 0.7854\\n"
+  "near_z: 0.1\\n"
+  "far_z: 1000.0\\n"
+  "auto_aspect_ratio: 1\\n"
+  "\"\n"
+  "}\n"
+  ""
+  position {
+    y: 7.0
+    z: 12.0
+  }
+  rotation {
+    x: -0.29408205
+    w: 0.9557802
+  }
+}
+embedded_instances {
+  id: "main"
+  data: "components {\n"
+  "  id: \"look_rotation\"\n"
+  "  component: \"/examples/movement/look_rotation/look_rotation.script\"\n"
+  "}\n"
+  ""
+}
+embedded_instances {
+  id: "observer"
+  data: "embedded_components {\n"
+  "  id: \"model\"\n"
+  "  type: \"model\"\n"
+  "  data: \"mesh: \\\"/assets/models/arrow-standing.glb\\\"\\n"
+  "name: \\\"{{NAME}}\\\"\\n"
+  "materials {\\n"
+  "  name: \\\"colormap\\\"\\n"
+  "  material: \\\"/examples/material/unlit/unlit.material\\\"\\n"
+  "  textures {\\n"
+  "    sampler: \\\"texture0\\\"\\n"
+  "    texture: \\\"/assets/models/kenney_train-kit/Textures/colormap.png\\\"\\n"
+  "  }\\n"
+  "}\\n"
+  "\"\n"
+  "  rotation {\n"
+  "    y: 1.0\n"
+  "    w: 6.123234E-17\n"
+  "  }\n"
+  "}\n"
+  ""
+  position {
+    x: -1.0
+  }
+  scale3 {
+    x: 0.5
+    y: 0.5
+    z: 0.5
+  }
+}
+embedded_instances {
+  id: "railroad"
+  children: "corner-large1"
+  children: "corner-large2"
+  children: "corner-large3"
+  children: "corner-large4"
+  data: ""
+}
+embedded_instances {
+  id: "corner-large1"
+  data: "components {\n"
+  "  id: \"model\"\n"
+  "  component: \"/assets/models/kenney_train-kit/railroad-corner-large.model\"\n"
+  "}\n"
+  ""
+  position {
+    x: 4.0
+  }
+}
+embedded_instances {
+  id: "corner-large2"
+  data: "components {\n"
+  "  id: \"model\"\n"
+  "  component: \"/assets/models/kenney_train-kit/railroad-corner-large.model\"\n"
+  "}\n"
+  ""
+  position {
+    z: 4.0
+  }
+  rotation {
+    y: -0.70710677
+    w: 0.70710677
+  }
+}
+embedded_instances {
+  id: "corner-large3"
+  data: "components {\n"
+  "  id: \"model\"\n"
+  "  component: \"/assets/models/kenney_train-kit/railroad-corner-large.model\"\n"
+  "}\n"
+  ""
+  position {
+    x: -4.0
+  }
+  rotation {
+    y: 1.0
+    w: 6.123234E-17
+  }
+}
+embedded_instances {
+  id: "corner-large4"
+  data: "components {\n"
+  "  id: \"model\"\n"
+  "  component: \"/assets/models/kenney_train-kit/railroad-corner-large.model\"\n"
+  "}\n"
+  ""
+  position {
+    z: -4.0
+  }
+  rotation {
+    y: 0.70710677
+    w: 0.70710677
+  }
+}
+embedded_instances {
+  id: "train_parent"
+  children: "train"
+  data: ""
+}
+embedded_instances {
+  id: "train"
+  data: "components {\n"
+  "  id: \"model\"\n"
+  "  component: \"/assets/models/kenney_train-kit/train-locomotive-b.model\"\n"
+  "}\n"
+  ""
+  position {
+    x: 4.0
+  }
+}
