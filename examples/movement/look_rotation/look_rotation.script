@@ -1,0 +1,69 @@
+--- Creates a rotation with the specified forward and upwards directions.
+-- Based on https://github.com/YclepticStudios/gmath/blob/151591f7d9d433b55dc6cdc907bd33aa4232f3a1/src/Quaternion.hpp (MIT License (c) 2016 Eric Phillips)
+-- @tparam vector3 forward The forward direction.
+-- @tparam vector3 upwards The upwards direction.
+-- @treturn quat The rotation.
+local function quat_look_rotation(forward, upwards)
+	forward = vmath.normalize(forward)
+	upwards = vmath.normalize(upwards)
+
+	-- No zero vectors
+	if vmath.length_sqr(forward) < 0.0000000001 or vmath.length_sqr(upwards) < 0.0000000001 then
+		return vmath.quat()
+	end
+
+	-- Handle alignment with up direction
+	if 1 - math.abs(vmath.dot(forward, upwards)) < 0.0000000001 then
+		return vmath.quat_from_to(vmath.vector3(0, 0, 1), forward)
+	end
+
+	-- Get orthogonal vectors
+	local right = vmath.normalize(vmath.cross(upwards, forward))
+	upwards = vmath.cross(forward, right)
+
+	-- Calculate rotation
+	local q = vmath.quat()
+	local radicand = right.x + upwards.y + forward.z
+	if radicand > 0 then
+		q.w = math.sqrt(1 + radicand) * 0.5
+		local recip = 1 / (4 * q.w)
+		q.x = (upwards.z - forward.y) * recip
+		q.y = (forward.x - right.z) * recip
+		q.z = (right.y - upwards.x) * recip
+	elseif right.x >= upwards.y and right.x >= forward.z then
+		q.x = math.sqrt(1 + right.x - upwards.y - forward.z) * 0.5
+		local recip = 1 / (4 * q.x)
+		q.w = (upwards.z - forward.y) * recip
+		q.z = (forward.x + right.z) * recip
+		q.y = (right.y + upwards.x) * recip
+	elseif upwards.y > forward.z then
+		q.y = math.sqrt(1 - right.x + upwards.y - forward.z) * 0.5
+		local recip = 1 / (4 * q.y)
+		q.z = (upwards.z + forward.y) * recip
+		q.w = (forward.x - right.z) * recip
+		q.x = (right.y + upwards.x) * recip
+	else
+		q.z = math.sqrt(1 - right.x - upwards.y + forward.z) * 0.5
+		local recip = 1 / (4 * q.z)
+		q.y = (upwards.z + forward.y) * recip
+		q.x = (forward.x + right.z) * recip
+		q.w = (right.y - upwards.x) * recip
+	end
+
+	return q
+end
+
+function init(self)
+	msg.post("/camera", "acquire_camera_focus")
+	msg.post("@render:", "use_camera_projection")
+
+	go.animate("/train_parent", "euler.y", go.PLAYBACK_LOOP_FORWARD, -360, go.EASING_LINEAR, 5)
+end
+
+function update(self, dt)
+	local from = go.get("/observer", "position")
+	local to = go.get_world_position("/train")
+	local up = vmath.vector3(0, 1, 0)
+	local rotation = quat_look_rotation(from - to, up)
+	go.set("/observer", "rotation", rotation)
+end
