@@ -1,0 +1,10 @@
+mesh: "/assets/models/kenney_train-kit/railroad-corner-small.glb"
+name: "railroad-corner-large"
+materials {
+  name: "colormap"
+  material: "/examples/material/unlit/unlit.material"
+  textures {
+    sampler: "texture0"
+    texture: "/assets/models/kenney_train-kit/Textures/colormap.png"
+  }
+}
