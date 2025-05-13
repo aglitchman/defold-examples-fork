@@ -1,0 +1,9 @@
+attribute highp vec4 position;
+uniform mediump mat4 mtx_viewproj;
+varying highp vec3 var_position;
+
+void main()
+{
+    var_position = position.xyz;
+    gl_Position =  mtx_viewproj * vec4(position.xyz, 1.0);
+}

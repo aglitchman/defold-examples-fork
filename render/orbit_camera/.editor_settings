@@ -61,8 +61,44 @@
   :workflow {
     :recent-files [
       [
+        "/input/game.input_binding"
+        :cljfx-form-view
+      ]
+      [
+        "/all.texture_profiles"
+        :cljfx-form-view
+      ]
+      [
+        "/example/debug_grid_xz.material"
+        :cljfx-form-view
+      ]
+      [
+        "/assets/models/kenney_prototype-kit/crate-color.glb"
+        :scene
+      ]
+      [
+        "/assets/models/kenney_prototype-kit/crate.glb"
+        :scene
+      ]
+      [
+        "/assets/models/kenney_prototype-kit/weapon-sword.glb"
+        :scene
+      ]
+      [
+        "/assets/models/kenney_prototype-kit/target-a-round.glb"
+        :scene
+      ]
+      [
+        "/game.project"
+        :cljfx-form-view
+      ]
+      [
         "/example/orbit_camera.collection"
         :scene
+      ]
+      [
+        "/example/orbit_camera.script"
+        :code
       ]
     ]
   }

@@ -16,11 +16,11 @@ embedded_instances {
   "  }\\n"
   "}\\n"
   "\"\n"
+  "  position {\n"
+  "    y: -0.25\n"
+  "  }\n"
   "}\n"
   ""
-  position {
-    y: -0.25
-  }
 }
 embedded_instances {
   id: "camera"
@@ -32,7 +32,7 @@ embedded_instances {
   "  id: \"camera\"\n"
   "  type: \"camera\"\n"
   "  data: \"aspect_ratio: 1.0\\n"
-  "fov: 0.7854\\n"
+  "fov: 0.78\\n"
   "near_z: 0.1\\n"
   "far_z: 1000.0\\n"
   "auto_aspect_ratio: 1\\n"
@@ -40,14 +40,57 @@ embedded_instances {
   "}\n"
   ""
   position {
-    x: 2.0
-    y: 2.0
     z: 2.0
   }
   rotation {
-    x: -0.27781594
-    y: 0.36497167
-    z: 0.11507513
-    w: 0.88111955
+    x: -0.35355338
+    y: -0.35355338
+    z: -0.14644662
+    w: 0.8535534
   }
+}
+embedded_instances {
+  id: "target"
+  data: "embedded_components {\n"
+  "  id: \"model1\"\n"
+  "  type: \"model\"\n"
+  "  data: \"mesh: \\\"/assets/models/kenney_prototype-kit/target-a-round.glb\\\"\\n"
+  "name: \\\"{{NAME}}\\\"\\n"
+  "materials {\\n"
+  "  name: \\\"colormap\\\"\\n"
+  "  material: \\\"/example/unlit.material\\\"\\n"
+  "  textures {\\n"
+  "    sampler: \\\"texture0\\\"\\n"
+  "    texture: \\\"/assets/models/kenney_prototype-kit/Textures/colormap.png\\\"\\n"
+  "  }\\n"
+  "}\\n"
+  "\"\n"
+  "  position {\n"
+  "    y: -0.25\n"
+  "  }\n"
+  "}\n"
+  ""
+  position {
+    x: 100000.0
+  }
+}
+embedded_instances {
+  id: "grid"
+  data: "embedded_components {\n"
+  "  id: \"sprite\"\n"
+  "  type: \"sprite\"\n"
+  "  data: \"default_animation: \\\"\\\"\\n"
+  "material: \\\"/example/debug_grid_xz.material\\\"\\n"
+  "size {\\n"
+  "  x: 1000.0\\n"
+  "  y: 1000.0\\n"
+  "}\\n"
+  "size_mode: SIZE_MODE_MANUAL\\n"
+  "\"\n"
+  "  rotation {\n"
+  "    x: 0.70710677\n"
+  "    w: 0.70710677\n"
+  "  }\n"
+  "}\n"
+  ""
 }

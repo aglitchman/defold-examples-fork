@@ -7,6 +7,56 @@ go.property("rotation_speed", 0.5)
 -- The offset of the camera from the origin
 go.property("offset", vmath.vector3(0, 0, 0))
 
+--- https://github.com/playcanvas/engine/blob/main/src/scene/camera.js#L570
+--- Convert a point from 2D screen space to 3D world space. Supports only perspective.
+-- @param x number X coordinate on screen.
+-- @param y number Y coordinate on screen.
+-- @param z number The distance from the camera in world space to create the new point.
+-- @param camera_id url The camera URL to get params from.
+local function screen_to_world(x, y, z, camera_id)
+	-- Camera properties
+	-- local mode = go.get(camera_id, "orthographic_projection")
+	-- print(mode)
+	local projection = camera.get_projection(camera_id)
+	assert(projection.m33 == 0.0, "only `perspective` mode is supported")
+
+	local cw, ch = window.get_size()
+	-- local far_z = camera.get_far_z(camera_id)
+	local near_z = camera.get_near_z(camera_id)
+	local aspect_ratio = cw / ch
+
+	-- Calculate the screen click as a point on the far plane of the normalized device coordinate 'box' (z=1)
+	local ndc_x = x / cw * 2 - 1
+	local ndc_y = y / ch * 2 - 1
+	-- local ndc_z = z / (far_z - near_z) * 2 - 1
+
+	-- Calculate perspective projection matrix half size at the near plane
+	local half_size = vmath.vector4(0, 0, -near_z, 1)
+	half_size.y = near_z * math.tan(camera.get_fov(camera_id) / 2)
+	half_size.x = half_size.y * aspect_ratio
+
+	-- Scale by normalized screen coordinates
+	half_size.x = half_size.x * ndc_x
+	half_size.y = half_size.y * ndc_y
+
+	-- Transform to world space
+	local inv_view = vmath.inv(camera.get_view(camera_id))
+	local point = inv_view * half_size
+
+	-- Move to distance z from the camera
+	local world_coord = vmath.vector3()
+	world_coord.x = point.x - inv_view.m03
+	world_coord.y = point.y - inv_view.m13
+	world_coord.z = point.z - inv_view.m23
+
+	local v = vmath.normalize(world_coord)
+	world_coord.x = v.x * z + inv_view.m03
+	world_coord.y = v.y * z + inv_view.m13
+	world_coord.z = v.z * z + inv_view.m23
+
+	return world_coord
+end
+
 function init(self)
 	-- Acquire input focus to receive input events
 	msg.post(".", "acquire_input_focus")
@@ -14,23 +64,26 @@ function init(self)
 	-- Initialize start values
 	self.yaw = go.get(".", "euler.y")
 	self.pitch = go.get(".", "euler.x")
-	self.zoom_offset = 0
+	self.zoom_target = 0
+	self.offset_target = vmath.vector3(0)
 	self.current_yaw = self.yaw
 	self.current_pitch = self.pitch
-	self.current_zoom = self.zoom_offset
+	self.current_zoom = self.zoom_target
+	self.current_offset = vmath.vector3(0)
 end
 
 function update(self, dt)
 	-- Animate camera rotation and zoom
 	self.current_yaw = vmath.lerp(0.15, self.current_yaw, self.yaw)
 	self.current_pitch = vmath.lerp(0.15, self.current_pitch, self.pitch)
-	self.current_zoom = vmath.lerp(0.15, self.current_zoom, self.zoom_offset)
+	self.current_zoom = vmath.lerp(0.15, self.current_zoom, self.zoom_target)
+	self.current_offset = vmath.lerp(0.15, self.current_offset, self.offset_target)
 
 	-- Calculate rotation and position
 	local camera_yaw = vmath.quat_rotation_y(math.rad(self.current_yaw))
 	local camera_pitch = vmath.quat_rotation_x(math.rad(self.current_pitch))
 	local camera_rotation = camera_yaw * camera_pitch
-	local camera_position = self.offset + vmath.rotate(camera_rotation, vmath.vector3(0, 0, self.zoom + self.current_zoom))
+	local camera_position = self.offset + self.current_offset + vmath.rotate(camera_rotation, vmath.vector3(0, 0, self.zoom + self.current_zoom))
 
 	-- Set camera position and rotation
 	go.set_position(camera_position)
@@ -41,9 +94,22 @@ function on_input(self, action_id, action)
 	if action_id == hash("touch") and not action.pressed then
 		self.yaw   = self.yaw   - action.dx * self.rotation_speed
 		self.pitch = self.pitch + action.dy * self.rotation_speed
+	elseif action_id == hash("mouse_button_middle") and not action.pressed then
+		if not self.last_point then
+			return
+		end
+		local distance = (self.zoom + self.current_zoom)
+		local old_world = vmath.vector3(screen_to_world(self.last_point.x, self.last_point.y, distance, "#camera"))
+		local new_world = vmath.vector3(screen_to_world(action.screen_x, action.screen_y, distance, "#camera"))
+		-- print(distance, new_world)
+		local diff = old_world - new_world
+		self.offset_target = self.offset_target + diff
+		-- go.set_position(new_world, "/target")
 	elseif action_id == hash("wheel_up") then
-		self.zoom_offset = self.zoom_offset - self.zoom * self.zoom_speed
+		self.zoom_target = self.zoom_target - self.zoom * self.zoom_speed
 	elseif action_id == hash("wheel_down") then
-		self.zoom_offset = self.zoom_offset + self.zoom * self.zoom_speed
+		self.zoom_target = self.zoom_target + self.zoom * self.zoom_speed
+	elseif action_id == nil then
+		self.last_point = { x = action.screen_x, y = action.screen_y }
 	end
 end
